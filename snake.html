@@ -1,0 +1,185 @@
+<html>
+<head>
+<style type="text/css">
+	canvas#canvas {
+		display: block;
+		margin: 5px auto;
+		border: 10px solid #657;
+	}
+	.button {
+	    display: inline-block;
+	    align-content: center;
+	    justify-content: center;
+	    background-color: green;
+	    width: 50px;
+	    height: 50px;
+	    margin: 5px 0;
+	    align-items: center;
+	}
+	.direction {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+	}
+	.container {	
+		width: 120px;
+		margin: 0px auto;
+		text-align: center;
+	}
+</style>
+</head>
+<body style="background-color: white">
+<canvas id="canvas" width="450" height="450"}>
+</canvas>
+<div class="container">
+	<div id="up" class="button">
+		<p>up</p>
+	</div>
+	<div class="direction">
+		<div id="left" class="button">
+			<p>left</p>
+		</div>
+		<div id="right" class="button">
+			<p>right</p>
+		</div>
+	</div>
+	<div id="down" class="button">
+		<p>down</p>
+	</div>
+</div>
+<script type="text/javascript">
+(function() {
+	const canvas = document.getElementById("canvas");
+	const context = canvas.getContext("2d");
+	const width = canvas.width;
+	const height = canvas.height;
+	const defaultInterval = 100;
+
+	const cw = 10;
+	var d, food, score, level;
+
+	var snake_array;
+
+	function init() {
+		d = "right";
+		create_snake();
+		create_food();
+		score = 0;
+		level = 1;
+		if (typeof game_loop != "undefined") clearInterval(game_loop);
+		game_loop = setInterval(paint, defaultInterval);
+	}
+
+	init();
+	setupMobileControll();
+
+	function create_snake() {
+		var length = 5;
+		snake_array = [];
+		for (var i = length - 1; i >= 0; i--) {
+    		snake_array.push({ x: i, y: 0 });
+	    }
+	}
+
+	function create_food() {
+		food = {
+			x: Math.round(Math.random() * (width - cw) / cw),
+			y: Math.round(Math.random() * (height - cw) / cw),
+		};
+	}
+
+	function paint() {
+		context.fillStyle = "white";
+		context.fillRect(0, 0, width, height);
+		context.strokeStyle = "black";
+		context.strokeRect(0, 0, width, height);
+		var nx = snake_array[0].x;
+		var ny = snake_array[0].y;
+
+		if (d == "right") nx++;
+		else if (d == "left") nx--;
+		else if (d == "up") ny--;
+		else if (d == "down") ny++;
+
+		if (
+			nx == -1 ||
+			nx == width / cw ||
+			ny == -1 ||
+			ny == height / cw ||
+			check_collision(nx, ny, snake_array)
+		) {
+			init();
+			return;
+		}
+
+		if (nx == food.x && ny == food.y) {
+			var tail = { x: nx, y: ny };
+			score++;
+
+			if (score % 2 === 0) {
+				level++;
+				clearInterval(game_loop);
+				game_loop = setInterval(paint, defaultInterval - level);
+			}
+			
+			create_food();
+		} else {
+			var tail = snake_array.pop();
+			tail.x = nx;
+			tail.y = ny;
+		}
+
+		snake_array.unshift(tail);
+
+		for (var i = 0; i < snake_array.length; i++) {
+			var c = snake_array[i];
+			paint_cell(c.x, c.y, "blue");
+		}
+
+		paint_cell(food.x, food.y, "red");
+		var score_text = "Score: " + score;
+		var level_text = "Level: " + level;
+		context.fillText(score_text, 5, height - 5);
+		context.fillText(level_text, 60, height - 5);
+	}
+
+	function paint_cell(x, y, color) {
+		context.fillStyle = color;
+		context.fillRect(x * cw, y * cw, cw, cw);
+		context.strokeStyle = "white";
+		context.strokeRect(x * cw, y * cw, cw, cw);
+	}
+
+	function check_collision(x, y, array) {
+		for (var i = 0; i < array.length; i++) {
+			if (array[i].x == x && array[i].y == y) return true;
+	    }
+	    return false;
+	}
+
+	document.addEventListener("keydown", keydown, false);
+	function keydown(e) {
+		var key = e.which;
+	    if (key == "37" && d != "right") d = "left";
+	    else if (key == "38" && d != "down") d = "up";
+	    else if (key == "39" && d != "left") d = "right";
+	    else if (key == "40" && d != "up") d = "down";
+	}
+
+	function setupMobileControll() {
+		[
+			{name: "up", value: 38},
+			{name: "down", value: 40},
+			{name: "right", value: 39},
+			{name: "left", value: 37},
+		].forEach(element => {
+			document.getElementById(element.name).onclick = () => {
+				var e = new KeyboardEvent('keydown', {'code': element.value, 'which': element.value});
+				document.dispatchEvent(e);
+			};
+		});	
+	}
+})();
+</script>
+</body>
+</html>
